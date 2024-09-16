@@ -1,131 +1,140 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 const int maxTasks = 100;
 const int maxLength = 50;
 
-char tasks[maxTasks][maxLength];  // 2D array that stores 100 tasks, each 50 characters long
-int status[maxTasks] = {0};       // Array that keeps track of whether each task is done (1) or not (0)
-int taskCount = 0;                // Counter to keep track of the number of tasks
+// Function prototypes (declarations)
+typedef struct {
+    char *description;
+    int status;
+} Task;
 
-void addTask() {
-    if (taskCount < maxTasks) {
-        printf("Enter a new task: ");
-        scanf(" %[^\n]", tasks[taskCount]);  // Store the new task in tasks[taskCount]
-        status[taskCount] = 0;               // Initialize the task as incomplete
-        taskCount++;                         // Increment the task count
+void addTask(Task tasks[], int *taskCount);
+void viewTasks(Task tasks[], int taskCount);
+void completeTask(Task tasks[], int taskCount);
+void deleteTask(Task tasks[], int *taskCount);
+
+int main() {
+    Task tasks[maxTasks];
+    int taskCount = 0;
+    int choice = 0;
+
+    printf("\nWelcome to your To-Do List App!\n");
+
+    while (choice != 5) {
+        printf("\nMain Menu:\n");
+        printf("1. Add a task\n");
+        printf("2. View tasks\n");
+        printf("3. Mark a task as complete\n");
+        printf("4. Delete a task\n");
+        printf("5. Exit\n");
+        printf("Enter your choice: ");
+
+        if (scanf("%d", &choice) != 1) {
+            printf("Invalid input. Please enter a number.\n");
+            while (getchar() != '\n');
+            choice = 0;
+            continue;
+        }
+        getchar();  // Clear newline left in buffer
+
+        switch (choice) {
+            case 1:
+                addTask(tasks, &taskCount);
+                break;
+            case 2:
+                viewTasks(tasks, taskCount);
+                break;
+            case 3:
+                completeTask(tasks, taskCount);
+                break;
+            case 4:
+                deleteTask(tasks, &taskCount);
+                break;
+            case 5:
+                printf("Thank you for using the To-Do List App!\n");
+                break;
+            default:
+                printf("Invalid choice. Try again.\n");
+        }
+    }
+
+    return 0;
+}
+
+// Function definitions
+
+void addTask(Task tasks[], int *taskCount) {
+    if (*taskCount < maxTasks) {  // Check if the task list is not full
+        tasks[*taskCount].description = (char *)malloc(maxLength * sizeof(char));  // Allocate memory for the task description
+        if (tasks[*taskCount].description == NULL) {  // Check if memory allocation failed
+            printf("Memory allocation failed!\n");  // Print error if memory allocation failed
+            return;  // Exit the function
+        }
+
+        printf("Enter a new task: ");  // Prompt user to enter a new task
+        fgets(tasks[*taskCount].description, maxLength, stdin);  // Get the task description from the user
+        tasks[*taskCount].description[strcspn(tasks[*taskCount].description, "\n")] = '\0';  // Remove newline character from input
+
+        tasks[*taskCount].status = 0;  // Mark the new task as incomplete (status = 0)
+        (*taskCount)++;  // Increment the task count
     } else {
-        printf("Task list is full!\n");
+        printf("Task list is full!\n");  // Print error if the task list is full
     }
 }
 
-void viewTasks() {
+void viewTasks(Task tasks[], int taskCount) {
     if (taskCount == 0) {
         printf("No tasks available.\n");
     } else {
         printf("Your To-Do List:\n");
-        for (int i = 0; i < taskCount; i++) {  // Print the task number and description
-            printf("%d. %s\n", i + 1, tasks[i]);
-            if (status[i] == 0) {
-                printf("[Incomplete]\n");  // Mark as incomplete if status[i] is 0
-            } else {
-                printf("[Complete]\n");  // Mark as complete if status[i] is 1
-            }
+        for (int i = 0; i < taskCount; i++) {
+            printf("%d. %s\n", i + 1, tasks[i].description);
+            printf(tasks[i].status == 0 ? "[Incomplete]\n" : "[Complete]\n");
         }
     }
 }
 
-void completeTask() {
+void completeTask(Task tasks[], int taskCount) {
     if (taskCount == 0) {
         printf("No tasks available to complete.\n");
     } else {
-        int taskNumber;  // Variable to store task number entered by user
+        int taskNumber;
         printf("Enter the task number to mark as complete: ");
-        scanf("%d", &taskNumber);  // Get the task number from the user
+        scanf("%d", &taskNumber);
+        getchar();
 
         if (taskNumber < 1 || taskNumber > taskCount) {
-            printf("Invalid task number.\n");  // Check if the task number is valid
+            printf("Invalid task number.\n");
         } else {
-            status[taskNumber - 1] = 1;  // Mark the task as complete
+            tasks[taskNumber - 1].status = 1;
             printf("Task %d marked as complete.\n", taskNumber);
         }
     }
 }
 
-void deleteTask() {
-    if (taskCount == 0) {
+void deleteTask(Task tasks[], int *taskCount) {
+    if (*taskCount == 0) {
         printf("No tasks available to delete.\n");
     } else {
         int taskNumber;
         printf("Enter a task number to delete: ");
-        scanf("%d", &taskNumber);  // Get task number from user
+        scanf("%d", &taskNumber);
+        getchar();
 
-        if (taskNumber < 1 || taskNumber > taskCount) {
+        if (taskNumber < 1 || taskNumber > *taskCount) {
             printf("Invalid task number.\n");
         } else {
-            // Shift tasks and statuses up to fill the gap
-            for (int i = taskNumber - 1; i < taskCount - 1; i++) {
-                strcpy(tasks[i], tasks[i + 1]);  // Copy the next task into the current position
-                status[i] = status[i + 1];       // Copy the next status into the current position
+            free(tasks[taskNumber - 1].description);
+
+            for (int i = taskNumber - 1; i < *taskCount - 1; i++) {
+                tasks[i] = tasks[i + 1];
             }
 
-            // Decrement task count
-            taskCount--;
-
-            // Resetting the memory
-            memset(tasks[taskCount], 0, sizeof(tasks[taskCount]));  // Set all characters in the task string to '\0'
-            status[taskCount] = 0;  // Reset the status of the task at the invalid last position in the list to 0 (incomplete)
+            (*taskCount)--;
             printf("Task %d deleted.\n", taskNumber);
         }
     }
-}
-
-int main() {
-    printf("\nWelcome to your To-Do List App!\n");
-
-    int choice = 0;
-
-    while (choice != 5) {  // Continue looping until user selects option 5
-        printf("\nMain Menu:\n");
-        printf("Enter 1 to Add a task.\n");
-        printf("Enter 2 to View Tasks.\n");
-        printf("Enter 3 to Mark a task as complete.\n");
-        printf("Enter 4 to Delete a task.\n");
-        printf("Enter 5 to Exit the Program.\n");
-        printf("Enter your choice: ");
-
-        // Validate input to ensure it's an integer
-        if (scanf("%d", &choice) != 1) {
-            // If scanf fails (returns 0), it's not a valid integer input
-            printf("Invalid input. Please enter a number between 1 and 5.\n");
-
-            // Clear the input buffer
-            while (getchar() != '\n');  // Discard invalid input
-            choice = 0;                 // Reset choice to avoid incorrect processing
-            continue;                   // Go back to the start of the loop
-        }
-
-        switch (choice) {
-            case 1:
-                addTask();
-                break;
-            case 2:
-                viewTasks();
-                break;
-            case 3:
-                completeTask();
-                break;
-            case 4:
-                deleteTask();
-                break;
-            case 5:
-                printf("Thank you for choosing the To-Do List App!\n");
-                break;
-            default:
-                printf("Invalid choice. Please try again.\n");
-                break;
-        }
-    }
-
-    return 0;
 }
